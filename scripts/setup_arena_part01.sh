@@ -41,4 +41,7 @@ fi
 
 sudo usermod -aG docker $USER
 
+sudo systemctl start docker
+sudo systemctl enable docker
+
 echo "Reinicia el sistema y ejecuta setup_arena_part02.sh"
