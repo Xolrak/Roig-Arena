@@ -49,6 +49,16 @@ cp -rf ../scripts/data/app/Http/Controllers/CompraController.php ./app/Http/Cont
 cp -rf ../scripts/data/app/Http/Controllers/EntradaController.php ./app/Http/Controllers/EntradaController.php
 cp -rf ../scripts/data/routes/apiv2.php ./routes/api.php
 
+## RESOURCES
+mkdir -p ./app/Http/Resources
+cp -rf ../scripts/data/app/Http/Resources/AsientoResource.php ./app/Http/Resources/AsientoResource.php
+cp -rf ../scripts/data/app/Http/Resources/EntradaResource.php ./app/Http/Resources/EntradaResource.php
+cp -rf ../scripts/data/app/Http/Resources/EventoResource.php ./app/Http/Resources/EventoResource.php
+cp -rf ../scripts/data/app/Http/Resources/ReservaResource.php ./app/Http/Resources/ReservaResource.php
+cp -rf ../scripts/data/app/Http/Resources/SectorResource.php ./app/Http/Resources/SectorResource.php
+cp -rf ../scripts/data/app/Http/Resources/UserResource.php ./app/Http/Resources/UserResource.php
+cp -rf ../scripts/data/app/Http/Resources/PrecioResource.php ./app/Http/Resources/PrecioResource.php
+
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
 echo "Ejecuta source ~/.bashrc para poder usar el alias de sail"
