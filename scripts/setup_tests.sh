@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd roig-arena
 ## SEEDERS
 cp -rf ../scripts/data/database/seeders/SectorSeeder.php ./database/seeders/SectorSeeder.php
 cp -rf ../scripts/data/database/seeders/AsientoSeeder.php ./database/seeders/AsientoSeeder.php
