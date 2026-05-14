@@ -27,7 +27,6 @@ cp -rf ../scripts/data/bootstrap/appv2.php ./bootstrap/app.php
 mkdir -p ./database/migrations
 cp -rf ../scripts/data/database/migrations/0001_01_01_000000_create_users_table.php ./database/migrations/0001_01_01_000000_create_users_table.php
 cp -rf ../scripts/data/database/migrations/2026_02_07_193317_create_roig_arena_tables.php ./database/migrations/2026_02_07_193317_create_roig_arena_tables.php
-./vendor/bin/sail artisan migrate:fresh
 
 ## MODELOS ELOQUENT
 mkdir -p ./app/Models
@@ -72,6 +71,8 @@ cp -rf ../scripts/data/routes/console.php ./routes/console.php
 cp -rf ../scripts/data/app/Http/Middleware/IsAdminv2.php ./app/Http/Middleware/IsAdmin.php
 
 cp -rf ../scripts/data/routes/apiv3.php ./routes/api.php
+
+./vendor/bin/sail artisan migrate:fresh
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
