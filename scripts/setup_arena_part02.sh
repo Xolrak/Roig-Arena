@@ -22,10 +22,21 @@ cp -rf ../scripts/data/app/Http/Middleware/IsAdmin.php ./app/Http/Middleware/IsA
 cp -rf ../scripts/data/bootstrap/appv2.php ./bootstrap/app.php
 ./vendor/bin/sail artisan migrate:fresh --seed
 
-## Migraciones
+## MIGRACIONES
+mkdir -p ./database/migrations
 cp -rf ../scripts/data/database/migrations/0001_01_01_000000_create_users_table.php ./database/migrations/0001_01_01_000000_create_users_table.php
 cp -rf ../scripts/data/database/migrations/2026_02_07_193317_create_roig_arena_tables.php ./database/migrations/2026_02_07_193317_create_roig_arena_tables.php
 ./vendor/bin/sail artisan migrate
+
+## MODELOS ELOQUENT
+mkdir -p ./app/Models
+cp -rf ../scripts/data/app/Models/Sector.php ./app/Models/Sector.php
+cp -rf ../scripts/data/app/Models/Asiento.php ./app/Models/Asiento.php
+cp -rf ../scripts/data/app/Models/Evento.php ./app/Models/Evento.php
+cp -rf ../scripts/data/app/Models/Precio.php ./app/Models/Precio.php
+cp -rf ../scripts/data/app/Models/EstadoAsiento.php ./app/Models/EstadoAsiento.php
+cp -rf ../scripts/data/app/Models/Entrada.php ./app/Models/Entrada.php
+cp -rf ../scripts/data/app/Models/Userv2.php ./app/Models/User.php
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
