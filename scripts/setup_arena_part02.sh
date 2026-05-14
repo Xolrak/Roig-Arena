@@ -5,7 +5,7 @@ curl -s "https://laravel.build/roig-arena?with=mysql,redis,meilisearch,mailpit,s
 sudo chown -R $USER:$USER ./roig-arena
 
 cd roig-arena
-cp -rf ./scripts/data/compose.yaml ./compose.yaml
+cp -rf ../scripts/data/compose.yaml ./compose.yaml
 ./vendor/bin/sail up -d
 
 ## Configuración SANCTUM
@@ -22,13 +22,12 @@ cp -rf ../scripts/data/app/Http/Controllers/Auth/AuthController.php ./app/Http/C
 ./vendor/bin/sail artisan make:middleware IsAdmin
 cp -rf ../scripts/data/app/Http/Middleware/IsAdmin.php ./app/Http/Middleware/IsAdmin.php
 cp -rf ../scripts/data/bootstrap/appv2.php ./bootstrap/app.php
-./vendor/bin/sail artisan migrate:fresh
 
 ## MIGRACIONES
 mkdir -p ./database/migrations
 cp -rf ../scripts/data/database/migrations/0001_01_01_000000_create_users_table.php ./database/migrations/0001_01_01_000000_create_users_table.php
 cp -rf ../scripts/data/database/migrations/2026_02_07_193317_create_roig_arena_tables.php ./database/migrations/2026_02_07_193317_create_roig_arena_tables.php
-./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan migrate:fresh
 
 ## MODELOS ELOQUENT
 mkdir -p ./app/Models
