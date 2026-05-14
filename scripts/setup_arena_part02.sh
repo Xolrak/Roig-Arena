@@ -24,7 +24,6 @@ cp -rf ../scripts/data/bootstrap/appv2.php ./bootstrap/app.php
 
 ## Migraciones
 cp -rf ../scripts/data/database/migrations/0001_01_01_000000_create_users_table.php ./database/migrations/0001_01_01_000000_create_users_table.php
-./vendor/bin/sail artisan make:migration create_roig_arena_tables
 cp -rf ../scripts/data/database/migrations/2026_02_07_193317_create_roig_arena_tables.php ./database/migrations/2026_02_07_193317_create_roig_arena_tables.php
 ./vendor/bin/sail artisan migrate
 
