@@ -59,6 +59,15 @@ cp -rf ../scripts/data/app/Http/Resources/SectorResource.php ./app/Http/Resource
 cp -rf ../scripts/data/app/Http/Resources/UserResource.php ./app/Http/Resources/UserResource.php
 cp -rf ../scripts/data/app/Http/Resources/PrecioResource.php ./app/Http/Resources/PrecioResource.php
 
+## SERVICES
+mkdir -p ./app/Services
+cp -rf ../scripts/data/app/Services/CompraService.php ./app/Services/CompraService.php
+cp -rf ../scripts/data/app/Services/LiberarReservasService.php ./app/Services/LiberarReservasService.php
+cp -rf ../scripts/data/app/Services/ReservaService.php ./app/Services/ReservaService.php
+mkdir -p ./app/Console/Commands
+cp -rf ../scripts/data/app/Console/Commands/LiberarReservasExpiradas.php ./app/Console/Commands/LiberarReservasExpiradas.php
+cp -rf ../scripts/data/routes/console.php ./routes/console.php
+
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
 echo "Ejecuta source ~/.bashrc para poder usar el alias de sail"
