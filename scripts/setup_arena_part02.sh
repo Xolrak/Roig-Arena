@@ -1,27 +1,44 @@
 #!/bin/bash
 
-curl -s "https://laravel.build/roig-arena?with=mysql,redis,meilisearch,mailpit,selenium" | bash
+# Asegurarse de estar en la raíz del proyecto (donde está composer.json)
+# Si el script se lanza desde scripts/, volvemos a la raíz
+# cd ~/Roig-Arena/roig-arena
 
-cd roig-arena
-cp -rf ../scripts/data/compose.yaml ./roig-arena/
-./vendor/bin/sail up -d
+echo "🚀 Iniciando configuración de Sanctum y migración de archivos..."
 
-## Configuración SANCTUM
+## 1. Configuración SANCTUM
 ./vendor/bin/sail composer require laravel/sanctum
 ./vendor/bin/sail artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-cp -rf ../scripts/data/app/Models/User.php ./roig-arena/app/Models/User.php
-cp -rf ../scripts/data/app/config/cors.php ./roig-arena/app/config/cors.php
-cp -rf ../scripts/data/.env ./roig-arena/.env
+
+## 2. Copia de archivos (Corrigiendo Rutas)
+# Origen: ../scripts/data/
+# Destino: ./ (carpeta actual del proyecto)
+
+echo "📂 Copiando modelos y configuración..."
+cp -rf ../scripts/data/app/Models/User.php ./app/Models/User.php
+cp -rf ../scripts/data/config/cors.php ./config/cors.php
+cp -rf ../scripts/data/.env ./.env
+
+echo "📂 Copiando lógica de rutas y bootstrap..."
+cp -rf ../scripts/data/bootstrap/app.php ./bootstrap/app.php
+cp -rf ../scripts/data/routes/api.php ./routes/api.php
+
+echo "📂 Configurando Controladores y Middleware..."
+# Creamos la carpeta de Auth por si no existe
+mkdir -p ./app/Http/Controllers/Auth
+
+# Copiamos el controlador (ojo a la ruta del origen en tu carpeta data)
+cp -rf ../scripts/data/app/Http/Controllers/Auth/AuthController.php ./app/Http/Controllers/Auth/AuthController.php
+cp -rf ../scripts/data/app/Http/Middleware/IsAdmin.php ./app/Http/Middleware/IsAdmin.php
+
+## 3. Limpieza y Regeneración
+echo "🧹 Limpiando cachés y regenerando autoload..."
 ./vendor/bin/sail artisan config:clear
-cp -rf ../scripts/data/bootstrap/app.php ./roig-arena/bootstrap/app.php
-cp -rf ../scripts/data/routes/api.php ./roig-arena/routes/api.php
-./vendor/bin/sail artisan make:controller Auth/AuthController
-cp -rf ../scripts/data/app/Http/Controllers/AuthController.php ./roig-arena/app/Http/Controllers/AuthController.php
-./vendor/bin/sail artisan make:middleware IsAdmin
-cp -rf ../app/Http/Middleware/IsAdmin.php
-cp -rf ../scripts/data/bootstrap/appv2.php ./roig-arena/bootstrap/app.php
-sail artisan migrate
+./vendor/bin/sail artisan route:clear
+./vendor/bin/sail composer dump-autoload
 
-echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
+## 4. Base de Datos
+echo "🗄️ Ejecutando migraciones..."
+./vendor/bin/sail artisan migrate
 
-echo "Ejecuta source ~/.bashrc para poder usar el alias de sail"
+echo "✅ Proceso finalizado. Prueba ahora el registro con el comando curl."
