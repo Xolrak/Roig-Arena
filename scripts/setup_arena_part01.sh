@@ -2,6 +2,8 @@
 
 # 1. Limpiar rastro del intento anterior
 sudo rm -f /etc/apt/sources.list.d/docker.list
+sudo apt remove apache2
+sudo apt autoremove
 
 echo "Actualizando índices de Debian..."
 sudo apt-get update
