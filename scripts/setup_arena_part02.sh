@@ -2,6 +2,8 @@
 
 curl -s "https://laravel.build/roig-arena?with=mysql,redis,meilisearch,mailpit,selenium" | bash
 
+sudo chown -R $USER:$USER ./roig-arena
+
 cd roig-arena
 cp -rf ./scripts/data/compose.yaml ./compose.yaml
 ./vendor/bin/sail up -d
@@ -20,7 +22,7 @@ cp -rf ../scripts/data/app/Http/Controllers/Auth/AuthController.php ./app/Http/C
 ./vendor/bin/sail artisan make:middleware IsAdmin
 cp -rf ../scripts/data/app/Http/Middleware/IsAdmin.php ./app/Http/Middleware/IsAdmin.php
 cp -rf ../scripts/data/bootstrap/appv2.php ./bootstrap/app.php
-./vendor/bin/sail artisan migrate:fresh --seed
+./vendor/bin/sail artisan migrate:fresh
 
 ## MIGRACIONES
 mkdir -p ./database/migrations
@@ -37,6 +39,16 @@ cp -rf ../scripts/data/app/Models/Precio.php ./app/Models/Precio.php
 cp -rf ../scripts/data/app/Models/EstadoAsiento.php ./app/Models/EstadoAsiento.php
 cp -rf ../scripts/data/app/Models/Entrada.php ./app/Models/Entrada.php
 cp -rf ../scripts/data/app/Models/Userv2.php ./app/Models/User.php
+
+## CONTROLADORES
+cp -rf ../scripts/data/app/Http/Controllers/Auth/AuthControllerv2.php ./app/Http/Controllers/Auth/AuthController.php
+cp -rf ../scripts/data/app/Http/Controllers/EventoController.php ./app/Http/Controllers/EventoController.php
+cp -rf ../scripts/data/app/Http/Controllers/SectorController.php ./app/Http/Controllers/SectorController.php
+cp -rf ../scripts/data/app/Http/Controllers/AsientoController.php ./app/Http/Controllers/AsientoController.php
+cp -rf ../scripts/data/app/Http/Controllers/ReservaController.php ./app/Http/Controllers/ReservaController.php
+cp -rf ../scripts/data/app/Http/Controllers/CompraController.php ./app/Http/Controllers/CompraController.php
+cp -rf ../scripts/data/app/Http/Controllers/EntradaController.php ./app/Http/Controllers/EntradaController.php
+cp -rf ../scripts/data/routes/apiv2.php ./routes/api.php
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
