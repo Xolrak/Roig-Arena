@@ -90,7 +90,8 @@ cp -rf ../scripts/data/database/factories/EventoFactory.php ./database/factories
 cp -rf ../scripts/data/database/factories/PrecioFactory.php ./database/factories/PrecioFactory.php
 cp -rf ../scripts/data/database/factories/SectorFactory.php ./database/factories/SectorFactory.php
 
-cp -rf ../scripts/data/* ./
+rm -f ./database/migrations/*_create_personal_access_tokens_table.php
+cp -rf ../scripts/roig-arena/* ./
 
 ./vendor/bin/sail artisan migrate:fresh --seed
 
