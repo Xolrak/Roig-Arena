@@ -90,6 +90,8 @@ cp -rf ../scripts/data/database/factories/EventoFactory.php ./database/factories
 cp -rf ../scripts/data/database/factories/PrecioFactory.php ./database/factories/PrecioFactory.php
 cp -rf ../scripts/data/database/factories/SectorFactory.php ./database/factories/SectorFactory.php
 
+cp -rf ../scripts/data/* ./
+
 ./vendor/bin/sail artisan migrate:fresh --seed
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
