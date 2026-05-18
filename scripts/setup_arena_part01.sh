@@ -28,7 +28,7 @@ echo "Instalando Docker Engine..."
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 echo "Instalando PHP..."
-sudo apt-get install -y php # Añadida instalación de PHP
+sudo apt-get install -y php-cli # Añadida instalación de PHP
 
 # 6. Verificación real
 if command -v docker &> /dev/null
