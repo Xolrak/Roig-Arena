@@ -45,4 +45,12 @@ class LiberarReservasService
         
         return $expiradas->count();
     }
+
+            /**
+             * Alias de compatibilidad para tests y código legado.
+             */
+            public function liberarPorUsuario($userId)
+            {
+                return $this->liberarDeUsuario($userId);
+            }
 }

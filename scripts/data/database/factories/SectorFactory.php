@@ -13,7 +13,8 @@ class SectorFactory extends Factory
     {
         return [
             'nombre' => 'Sector ' . $this->faker->numberBetween(101, 323),
-            'capacidad' => $this->faker->numberBetween(50, 200),
+            'descripcion' => $this->faker->sentence(),
+            'activo' => true,
         ];
     }
 }

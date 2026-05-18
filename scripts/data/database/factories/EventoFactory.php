@@ -13,7 +13,8 @@ class EventoFactory extends Factory
     {
         return [
             'nombre' => $this->faker->sentence(3),
-            'descripcion' => $this->faker->paragraph(),
+            'descripcion_corta' => $this->faker->sentence(12),
+            'descripcion_larga' => $this->faker->paragraphs(3, true),
             'fecha' => $this->faker->dateTimeBetween('now', '+1 year'),
             'hora' => $this->faker->time('H:i'),
             'poster_url' => $this->faker->imageUrl(640, 480, 'events', true),

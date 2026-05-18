@@ -69,6 +69,14 @@ class Asiento extends Model
     }
 
     /**
+     * Alias de compatibilidad para tests y código legado.
+     */
+    public function estaDisponible($eventoId): bool
+    {
+        return $this->estaDisponibleParaEvento($eventoId);
+    }
+
+    /**
      * Verificar si el asiento está reservado (bloqueado) para un evento
      */
     public function estaReservadoParaEvento($eventoId): bool

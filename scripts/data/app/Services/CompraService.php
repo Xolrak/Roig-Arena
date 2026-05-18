@@ -37,7 +37,9 @@ class CompraService
 
             DB::commit();
             
-            return collect($entradas)->load(['evento', 'asiento.sector']);
+            return Entrada::whereIn('id', collect($entradas)->pluck('id'))
+                ->with(['evento', 'asiento.sector'])
+                ->get();
             
         } catch (\Exception $e) {
             DB::rollBack();

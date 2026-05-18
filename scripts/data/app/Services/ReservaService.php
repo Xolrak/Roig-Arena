@@ -52,12 +52,17 @@ class ReservaService
     /**
      * Cancelar una reserva
      */
-    public function cancelarReserva($reservaId, $userId)
+    public function cancelarReserva($reservaId, $userId = null)
     {
-        $reserva = EstadoAsiento::where('id', $reservaId)
-            ->where('user_id', $userId)
+        $query = EstadoAsiento::where('id', $reservaId)
             ->where('estado', 'bloqueado')
-            ->firstOrFail();
+            ;
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        $reserva = $query->firstOrFail();
 
         $reserva->delete();
         
@@ -74,6 +79,14 @@ class ReservaService
             ->where('reservado_hasta', '>', now())
             ->with(['evento', 'asiento.sector'])
             ->get();
+    }
+
+    /**
+     * Alias de compatibilidad para tests y código legado.
+     */
+    public function obtenerReservasUsuario($userId)
+    {
+        return $this->obtenerReservasActivas($userId);
     }
 
     /**

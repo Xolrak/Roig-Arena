@@ -16,15 +16,18 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'name' => 'required_without:nombre|string|max:255',
+            'nombre' => 'required_without:name|string|max:255',
+            'apellido' => 'required_without:name|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        [$nombre, $apellido] = $this->normalizarNombreCompleto($request);
+
         $user = User::create([
-            'nombre' => $request->nombre,
-            'apellido' => $request->apellido,
+            'nombre' => $nombre,
+            'apellido' => $apellido,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_admin' => false,
@@ -33,7 +36,11 @@ class AuthController extends Controller
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => trim($user->nombre . ' ' . $user->apellido),
+                'email' => $user->email,
+            ],
             'token' => $token,
             'token_type' => 'Bearer',
         ], 201);
@@ -52,9 +59,9 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales son incorrectas.'],
-            ]);
+            return response()->json([
+                'message' => 'Las credenciales son incorrectas.',
+            ], 401);
         }
 
         // Eliminar tokens anteriores (opcional)
@@ -63,7 +70,11 @@ class AuthController extends Controller
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => trim($user->nombre . ' ' . $user->apellido),
+                'email' => $user->email,
+            ],
             'token' => $token,
             'token_type' => 'Bearer',
         ]);
@@ -74,10 +85,41 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        if ($user) {
+            $user->tokens()->delete();
+        }
 
         return response()->json([
             'message' => 'Sesión cerrada correctamente',
         ]);
+    }
+
+    /**
+     * Obtener usuario autenticado
+     */
+    public function user(Request $request)
+    {
+        return response()->json([
+            'data' => new \App\Http\Resources\UserResource($request->user()),
+        ]);
+    }
+
+    private function normalizarNombreCompleto(Request $request): array
+    {
+        if ($request->filled('name')) {
+            $partes = preg_split('/\s+/', trim($request->name), 2);
+
+            return [
+                $partes[0] ?? $request->name,
+                $partes[1] ?? '',
+            ];
+        }
+
+        return [
+            $request->nombre,
+            $request->apellido,
+        ];
     }
 }

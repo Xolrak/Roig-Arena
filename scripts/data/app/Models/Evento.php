@@ -83,6 +83,14 @@ class Evento extends Model
     }
 
     /**
+     * Atributo de compatibilidad para tests y respuestas antiguas.
+     */
+    public function getDescripcionAttribute(): ?string
+    {
+        return $this->descripcion_corta ?? $this->descripcion_larga;
+    }
+
+    /**
      * Obtener el precio de un sector específico
      */
     public function precioDelSector($sectorId)

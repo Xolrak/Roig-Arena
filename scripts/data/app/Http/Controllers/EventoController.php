@@ -30,12 +30,11 @@ class EventoController extends Controller
             ->findOrFail($id);
 
         return response()->json([
-            'data' => [
-                'evento' => $evento,
+            'data' => array_merge($evento->toArray(), [
                 'sectores_disponibles' => $evento->sectoresDisponibles(),
                 'asientos_disponibles' => $evento->totalAsientosDisponibles(),
                 'entradas_vendidas' => $evento->totalEntradasVendidas(),
-            ],
+            ]),
         ]);
     }
 
@@ -46,14 +45,16 @@ class EventoController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'descripcion_corta' => 'required|string|max:255',
-            'descripcion_larga' => 'required|string',
+            'descripcion' => 'nullable|string',
+            'descripcion_corta' => 'nullable|string|max:255',
+            'descripcion_larga' => 'nullable|string',
             'poster_url' => 'nullable|url',
             'fecha' => 'required|date|unique:eventos,fecha',
-            'hora' => 'required|date_format:H:i',
+            'hora' => 'required|string',
         ]);
 
-        $evento = Evento::create($request->all());
+        $data = $this->normalizarDescripcionEvento($request);
+        $evento = Evento::create($data);
 
         return response()->json([
             'data' => $evento,
@@ -70,14 +71,15 @@ class EventoController extends Controller
 
         $request->validate([
             'nombre' => 'sometimes|string|max:255',
-            'descripcion_corta' => 'sometimes|string|max:255',
-            'descripcion_larga' => 'sometimes|string',
+            'descripcion' => 'nullable|string',
+            'descripcion_corta' => 'nullable|string|max:255',
+            'descripcion_larga' => 'nullable|string',
             'poster_url' => 'nullable|url',
             'fecha' => 'sometimes|date|unique:eventos,fecha,' . $id,
-            'hora' => 'sometimes|date_format:H:i',
+            'hora' => 'sometimes|string',
         ]);
 
-        $evento->update($request->all());
+        $evento->update($this->normalizarDescripcionEvento($request));
 
         return response()->json([
             'data' => $evento,
@@ -104,5 +106,28 @@ class EventoController extends Controller
         return response()->json([
             'message' => 'Evento eliminado correctamente',
         ]);
+    }
+
+    private function normalizarDescripcionEvento(Request $request): array
+    {
+        $data = $request->only([
+            'nombre',
+            'descripcion_corta',
+            'descripcion_larga',
+            'poster_url',
+            'fecha',
+            'hora',
+        ]);
+
+        if ($request->filled('descripcion') && ! $request->filled('descripcion_corta') && ! $request->filled('descripcion_larga')) {
+            $data['descripcion_corta'] = $request->descripcion;
+            $data['descripcion_larga'] = $request->descripcion;
+        }
+
+        if ($request->filled('hora')) {
+            $data['hora'] = \Carbon\Carbon::parse($request->hora)->format('H:i');
+        }
+
+        return $data;
     }
 }
