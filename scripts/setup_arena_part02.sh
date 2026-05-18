@@ -72,7 +72,16 @@ cp -rf ../scripts/data/app/Http/Middleware/IsAdminv2.php ./app/Http/Middleware/I
 
 cp -rf ../scripts/data/routes/apiv3.php ./routes/api.php
 
-./vendor/bin/sail artisan migrate:fresh
+## SEEDERS
+mkdir -p ./database/seeders
+cp -rf ../scripts/data/database/seeders/AsientoSeeder.php ./database/seeders/AsientoSeeder.php
+cp -rf ../scripts/data/database/seeders/DatabaseSeeder.php ./database/seeders/DatabaseSeeder.php
+cp -rf ../scripts/data/database/seeders/EventoSeeder.php ./database/seeders/EventoSeeder.php
+cp -rf ../scripts/data/database/seeders/PrecioSeeder.php ./database/seeders/PrecioSeeder.php
+cp -rf ../scripts/data/database/seeders/SectorSeeder.php ./database/seeders/SectorSeeder.php
+cp -rf ../scripts/data/database/seeders/UserSeeder.php ./database/seeders/UserSeeder.php
+
+./vendor/bin/sail artisan migrate:fresh --seed
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
 
