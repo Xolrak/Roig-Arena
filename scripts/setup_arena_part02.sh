@@ -11,6 +11,11 @@ cp -rf ../scripts/data/compose.yaml ./compose.yaml
 ## Configuración SANCTUM
 ./vendor/bin/sail composer require laravel/sanctum
 ./vendor/bin/sail artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+
+# Normalizamos el nombre de la migración de Sanctum para que no use marcas de tiempo aleatorias
+# Esto evita que se duplique si vuelve a correr el script y garantiza que exista para los tests
+mv ./database/migrations/*_create_personal_access_tokens_table.php ./database/migrations/2026_05_18_000000_create_personal_access_tokens_table.php 2>/dev/null || true
+
 cp -rf ../scripts/data/app/Models/User.php ./app/Models/User.php
 cp -rf ../scripts/data/config/cors.php ./config/cors.php
 cp -rf ../scripts/data/.env ./.env
@@ -89,10 +94,16 @@ cp -rf ../scripts/data/database/factories/EstadoAsientoFactory.php ./database/fa
 cp -rf ../scripts/data/database/factories/EventoFactory.php ./database/factories/EventoFactory.php
 cp -rf ../scripts/data/database/factories/PrecioFactory.php ./database/factories/PrecioFactory.php
 cp -rf ../scripts/data/database/factories/SectorFactory.php ./database/factories/SectorFactory.php
+cp -rf ../scripts/data/database/factories/UserFactory.php ./database/factories/UserFactory.php
 
-rm -f ./database/migrations/*_create_personal_access_tokens_table.php
-cp -rf ../scripts/roig-arena/* ./
+## TESTS
+mkdir -p ./tests
+cp -rf ../scripts/tests/* ./tests/
 
+# Copia de seguridad genérica final respetando la migración estructurada de tokens
+cp -rf ../scripts/roig-arena/* ./ 2>/dev/null || true
+
+## EJECUCIÓN DE BASE DE DATOS
 ./vendor/bin/sail artisan migrate:fresh --seed
 
 echo "alias sail='./vendor/bin/sail'" >> ~/.bashrc
