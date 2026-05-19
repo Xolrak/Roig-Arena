@@ -175,16 +175,7 @@ class EventoController extends Controller
 
     private function calcularPrecioNormalizado(Evento $evento, Sector $sector): float
     {
-        $precioBase = match (true) {
-            str_starts_with($sector->nombre, 'Palco') => 150.00,
-            $sector->nombre === 'FRONT STAGE' => 120.00,
-            $sector->nombre === 'CLUB' => 100.00,
-            $sector->nombre === 'JOHNNIE WALKER' => 90.00,
-            $sector->nombre === 'PISTA' => 80.00,
-            str_starts_with($sector->nombre, 'Sector 10') => 50.00,
-            str_starts_with($sector->nombre, 'Sector 30') => 40.00,
-            default => 50.00,
-        };
+        $precioBase = $sector->precioBaseEfectivo();
 
         $multiplicador = match ($evento->nombre) {
             'Final Copa del Rey' => 1.5,

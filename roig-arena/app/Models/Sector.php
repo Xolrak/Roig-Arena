@@ -17,6 +17,8 @@ class Sector extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'asientos_total',
+        'precio_base',
         'activo',
     ];
 
@@ -25,6 +27,8 @@ class Sector extends Model
      */
     protected $casts = [
         'activo' => 'boolean',
+        'asientos_total' => 'integer',
+        'precio_base' => 'decimal:2',
     ];
 
     // ============================================
@@ -75,6 +79,35 @@ class Sector extends Model
     public function totalAsientos(): int
     {
         return $this->asientos()->count();
+    }
+
+    /**
+     * Precio base efectivo del sector.
+     */
+    public function precioBaseEfectivo(): float
+    {
+        if ($this->precio_base !== null) {
+            return (float) $this->precio_base;
+        }
+
+        return match (true) {
+            str_starts_with($this->nombre, 'Palco') => 150.00,
+            $this->nombre === 'FRONT STAGE' => 120.00,
+            $this->nombre === 'CLUB' => 100.00,
+            $this->nombre === 'JOHNNIE WALKER' => 90.00,
+            $this->nombre === 'PISTA' => 80.00,
+            str_starts_with($this->nombre, 'Sector 10') => 50.00,
+            str_starts_with($this->nombre, 'Sector 30') => 40.00,
+            default => 50.00,
+        };
+    }
+
+    /**
+     * Capacidad efectiva del sector.
+     */
+    public function capacidadEfectiva(): int
+    {
+        return (int) ($this->asientos_total ?: $this->totalAsientos());
     }
 
     /**

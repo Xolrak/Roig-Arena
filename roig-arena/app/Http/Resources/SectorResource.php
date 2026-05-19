@@ -14,6 +14,9 @@ class SectorResource extends JsonResource
             'nombre' => $this->nombre,
             'descripcion' => $this->descripcion,
             'activo' => $this->activo,
+            'asientos_total' => $this->asientos_total,
+            'precio_base' => $this->precio_base,
+            'precio_base_formateado' => $this->precio_base !== null ? number_format($this->precio_base, 2, ',', '.') . ' €' : null,
             'total_asientos' => $this->when(
                 $this->relationLoaded('asientos'),
                 fn() => $this->asientos->count()

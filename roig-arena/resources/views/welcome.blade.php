@@ -158,6 +158,14 @@
                                     <span>Descripcion</span>
                                     <input type="text" id="admin-sector-descripcion" placeholder="Zona baja">
                                 </label>
+                                <label class="admin-field">
+                                    <span>Asientos disponibles</span>
+                                    <input type="number" id="admin-sector-asientos-total" min="1" step="1" placeholder="120" required>
+                                </label>
+                                <label class="admin-field">
+                                    <span>Precio base</span>
+                                    <input type="number" id="admin-sector-precio-base" min="0.01" step="0.01" placeholder="50.00" required>
+                                </label>
                                 <label class="admin-field admin-field-inline">
                                     <input type="checkbox" id="admin-sector-activo" checked>
                                     <span>Activo</span>

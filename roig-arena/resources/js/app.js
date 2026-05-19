@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <div>
                     <div class="admin-row-title">${sector.nombre}</div>
-                    <div class="admin-row-meta">${sector.descripcion || 'Sin descripcion'} · ${sector.asientos_count || 0} asientos</div>
+                    <div class="admin-row-meta">${sector.descripcion || 'Sin descripcion'} · ${sector.asientos_total ?? sector.asientos_count ?? 0} asientos · ${Number.parseFloat(sector.precio_base ?? 0).toFixed(2)}€</div>
                 </div>
                 <div class="admin-row-actions">
                     <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${sector.id}">Editar</button>
@@ -833,6 +833,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nombre = document.getElementById('admin-sector-nombre').value.trim();
             const descripcion = document.getElementById('admin-sector-descripcion').value.trim();
+            const asientosTotal = document.getElementById('admin-sector-asientos-total').value.trim();
+            const precioBase = document.getElementById('admin-sector-precio-base').value.trim();
             const activo = document.getElementById('admin-sector-activo').checked;
 
             if (mode === 'create' && !nombre) {
@@ -840,9 +842,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (mode === 'create' && (!asientosTotal || !precioBase)) {
+                setAdminFeedback('La capacidad y el precio base son obligatorios.', 'error');
+                return;
+            }
+
             const payload = {};
             if (nombre) payload.nombre = nombre;
             if (descripcion) payload.descripcion = descripcion;
+            if (asientosTotal) payload.asientos_total = Number(asientosTotal);
+            if (precioBase) payload.precio_base = Number(precioBase);
             payload.activo = activo;
 
             try {
@@ -926,6 +935,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminSectorForm.dataset.editingId = id;
                 document.getElementById('admin-sector-nombre').value = sector.nombre || '';
                 document.getElementById('admin-sector-descripcion').value = sector.descripcion || '';
+                document.getElementById('admin-sector-asientos-total').value = sector.asientos_total || sector.asientos_count || '';
+                document.getElementById('admin-sector-precio-base').value = sector.precio_base || '';
                 document.getElementById('admin-sector-activo').checked = !!sector.activo;
                 const title = adminSectorForm.querySelector('[data-admin-form-title]');
                 const submit = adminSectorForm.querySelector('button[type="submit"]');

@@ -40,8 +40,16 @@ class EventoTest extends TestCase
     public function test_admin_puede_crear_evento()
     {
         $admin = User::factory()->create(['is_admin' => true]);
-        $sector1 = \App\Models\Sector::factory()->create(['nombre' => 'PISTA']);
-        $sector2 = \App\Models\Sector::factory()->create(['nombre' => 'Sector 301']);
+        $sector1 = \App\Models\Sector::factory()->create([
+            'nombre' => 'PISTA',
+            'asientos_total' => 40,
+            'precio_base' => 80.00,
+        ]);
+        $sector2 = \App\Models\Sector::factory()->create([
+            'nombre' => 'Sector 301',
+            'asientos_total' => 40,
+            'precio_base' => 40.00,
+        ]);
 
         $response = $this->actingAs($admin)->postJson('/api/admin/eventos', [
             'nombre' => 'Concierto Rock',
