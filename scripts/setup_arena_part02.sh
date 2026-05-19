@@ -48,7 +48,7 @@ copy_files() {
 # Función principal
 main() {
     log_info "Iniciando setup part02 de Roig-Arena..."
-    
+
     # Crear proyecto
     log_info "Creando proyecto Laravel con laravel.build..."
     curl -s "https://laravel.build/roig-arena?with=mysql,redis,meilisearch,mailpit,selenium" | bash
@@ -61,7 +61,6 @@ main() {
     
     # Compose y sail
     log_info "Configurando compose.yaml y levantando servicios..."
-    cp -f ../scripts/data/compose.yaml ./compose.yaml
     ./vendor/bin/sail up -d
     
     # Sanctum
