@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Models\Precio;
 use App\Models\User;
 use App\Models\Evento;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,8 +40,8 @@ class EventoTest extends TestCase
     public function test_admin_puede_crear_evento()
     {
         $admin = User::factory()->create(['is_admin' => true]);
-        $sector1 = \App\Models\Sector::factory()->create();
-        $sector2 = \App\Models\Sector::factory()->create();
+        $sector1 = \App\Models\Sector::factory()->create(['nombre' => 'PISTA']);
+        $sector2 = \App\Models\Sector::factory()->create(['nombre' => 'Sector 301']);
 
         $response = $this->actingAs($admin)->postJson('/api/admin/eventos', [
             'nombre' => 'Concierto Rock',
@@ -56,8 +57,16 @@ class EventoTest extends TestCase
 
         $eventoId = $response->json('data.id');
         $this->assertDatabaseCount('precios', 2);
-        $this->assertDatabaseHas('precios', ['evento_id' => $eventoId, 'sector_id' => $sector1->id]);
-        $this->assertDatabaseHas('precios', ['evento_id' => $eventoId, 'sector_id' => $sector2->id]);
+
+        $this->assertSame(80.0, (float) Precio::where('evento_id', $eventoId)->where('sector_id', $sector1->id)->value('precio'));
+        $this->assertSame(40.0, (float) Precio::where('evento_id', $eventoId)->where('sector_id', $sector2->id)->value('precio'));
+
+        $eventos = collect($this->getJson('/api/eventos')->json('data'));
+        $eventoCreado = $eventos->firstWhere('id', $eventoId);
+
+        $this->assertNotNull($eventoCreado);
+        $this->assertSame(40.0, (float) $eventoCreado['precio_minimo']);
+        $this->assertSame('40,00 €', $eventoCreado['precio_minimo_formateado']);
     }
 
     public function test_usuario_normal_no_puede_crear_evento()

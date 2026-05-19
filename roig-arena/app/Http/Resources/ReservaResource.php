@@ -29,6 +29,7 @@ class ReservaResource extends JsonResource
             'estado' => $this->estado,
             'tiempo_restante_minutos' => $this->tiempoRestante(),
             'expira_en' => $this->reservado_hasta?->format('d/m/Y H:i:s'),
+            'expira_en_iso' => $this->reservado_hasta?->toIso8601String(),
             'expirado' => $this->haExpirado(),
         ];
     }

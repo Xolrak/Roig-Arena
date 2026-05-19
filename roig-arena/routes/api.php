@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Entradas
     Route::get('/entradas', [EntradaController::class, 'index']);
     Route::get('/entradas/{id}', [EntradaController::class, 'show']);
+    Route::delete('/entradas/{id}', [EntradaController::class, 'destroy']);
 });
 
 // ============================================

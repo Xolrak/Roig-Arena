@@ -27,7 +27,7 @@ class ReservaController extends Controller
 
             return response()->json([
                 'data' => new ReservaResource($reserva),
-                'message' => 'Asiento reservado por 15 minutos',
+                'message' => 'Asiento reservado por 2 minutos',
             ], 201);
             
         } catch (\Exception $e) {

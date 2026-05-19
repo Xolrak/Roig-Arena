@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Services\LiberarReservasService;
 use App\Models\EstadoAsiento;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class LiberarReservasServiceTest extends TestCase
@@ -31,6 +32,46 @@ class LiberarReservasServiceTest extends TestCase
 
         $this->assertEquals(3, $liberadas);
         $this->assertDatabaseCount('estado_asientos', 0);
+    }
+
+    public function test_libera_reserva_cuando_pasan_mas_de_dos_minutos()
+    {
+        $inicio = Carbon::parse('2026-05-19 10:00:00');
+        Carbon::setTestNow($inicio);
+
+        $reserva = EstadoAsiento::factory()->create([
+            'estado' => 'bloqueado',
+            'reservado_hasta' => $inicio->copy()->addMinutes(2),
+        ]);
+
+        Carbon::setTestNow($inicio->copy()->addMinutes(2)->addSecond());
+
+        $liberadas = $this->service->liberarExpiradas();
+
+        Carbon::setTestNow();
+
+        $this->assertEquals(1, $liberadas);
+        $this->assertDatabaseMissing('estado_asientos', ['id' => $reserva->id]);
+    }
+
+    public function test_libera_reserva_exactamente_al_cumplir_dos_minutos()
+    {
+        $inicio = Carbon::parse('2026-05-19 10:00:00');
+        Carbon::setTestNow($inicio);
+
+        $reserva = EstadoAsiento::factory()->create([
+            'estado' => 'bloqueado',
+            'reservado_hasta' => $inicio->copy()->addMinutes(2),
+        ]);
+
+        Carbon::setTestNow($inicio->copy()->addMinutes(2));
+
+        $liberadas = $this->service->liberarExpiradas();
+
+        Carbon::setTestNow();
+
+        $this->assertEquals(1, $liberadas);
+        $this->assertDatabaseMissing('estado_asientos', ['id' => $reserva->id]);
     }
 
     public function test_no_libera_reservas_vendidas()

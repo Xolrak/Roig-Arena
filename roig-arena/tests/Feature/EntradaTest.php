@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Asiento;
+use App\Models\Entrada;
 use App\Models\EstadoAsiento;
 use App\Models\Evento;
 use App\Models\Sector;
@@ -71,5 +72,37 @@ class EntradaTest extends TestCase
             && $entrada['asiento']['fila'] === 'B'
             && $entrada['asiento']['numero'] === 7
         ));
+    }
+
+    public function test_usuario_puede_cancelar_una_entrada_y_liberar_el_asiento(): void
+    {
+        $user = User::factory()->create();
+        $sector = Sector::factory()->create(['nombre' => 'Principal']);
+        $evento = Evento::factory()->create(['fecha' => now()->addDay()]);
+        $asiento = Asiento::factory()->create([
+            'sector_id' => $sector->id,
+            'fila' => 'C',
+            'numero' => 9,
+        ]);
+
+        $estadoAsiento = EstadoAsiento::factory()->vendido()->create([
+            'evento_id' => $evento->id,
+            'asiento_id' => $asiento->id,
+            'user_id' => $user->id,
+        ]);
+
+        $entrada = Entrada::create([
+            'user_id' => $user->id,
+            'evento_id' => $evento->id,
+            'asiento_id' => $asiento->id,
+            'precio_pagado' => 55.00,
+        ]);
+
+        $response = $this->actingAs($user)->deleteJson("/api/entradas/{$entrada->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('message', 'Entrada cancelada y asiento liberado correctamente');
+        $this->assertDatabaseMissing('entradas', ['id' => $entrada->id]);
+        $this->assertDatabaseMissing('estado_asientos', ['id' => $estadoAsiento->id]);
     }
 }

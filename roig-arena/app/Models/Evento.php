@@ -101,6 +101,32 @@ class Evento extends Model
     }
 
     /**
+     * Obtener el precio mínimo del evento
+     */
+    public function precioMinimo(): ?float
+    {
+        if ($this->relationLoaded('precios')) {
+            $precios = $this->precios->pluck('precio')->filter(fn ($precio) => $precio !== null);
+
+            return $precios->isNotEmpty() ? (float) $precios->min() : null;
+        }
+
+        $precio = $this->precios()->min('precio');
+
+        return $precio !== null ? (float) $precio : null;
+    }
+
+    /**
+     * Obtener el precio mínimo formateado
+     */
+    public function precioMinimoFormateado(): ?string
+    {
+        $precioMinimo = $this->precioMinimo();
+
+        return $precioMinimo !== null ? number_format($precioMinimo, 2, ',', '.') . ' €' : null;
+    }
+
+    /**
      * Verificar si un sector está disponible para este evento
      */
     public function sectorEstaDisponible($sectorId): bool
@@ -119,7 +145,15 @@ class Evento extends Model
         $sectoresDisponibles = $this->sectoresDisponibles()->pluck('id');
         
         $totalAsientos = Asiento::whereIn('sector_id', $sectoresDisponibles)->count();
-        $asientosOcupados = $this->estadoAsientos()->count();
+        $asientosOcupados = $this->estadoAsientos()
+            ->where(function ($query) {
+                $query->where('estado', 'vendido')
+                    ->orWhere(function ($query) {
+                        $query->where('estado', 'bloqueado')
+                            ->where('reservado_hasta', '>', now());
+                    });
+            })
+            ->count();
         
         return $totalAsientos - $asientosOcupados;
     }

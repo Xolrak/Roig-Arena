@@ -18,6 +18,13 @@ class EventoController extends Controller
             ->with(['precios.sector'])
             ->get();
 
+        $eventos = $eventos->map(function ($evento) {
+            return array_merge($evento->toArray(), [
+                'precio_minimo' => $evento->precioMinimo(),
+                'precio_minimo_formateado' => $evento->precioMinimoFormateado(),
+            ]);
+        });
+
         return response()->json([
             'data' => $eventos,
         ]);
@@ -36,6 +43,8 @@ class EventoController extends Controller
                 'sectores_disponibles' => $evento->sectoresDisponibles(),
                 'asientos_disponibles' => $evento->totalAsientosDisponibles(),
                 'entradas_vendidas' => $evento->totalEntradasVendidas(),
+                'precio_minimo' => $evento->precioMinimo(),
+                'precio_minimo_formateado' => $evento->precioMinimoFormateado(),
             ]),
         ]);
     }
@@ -65,13 +74,13 @@ class EventoController extends Controller
         $data = $this->normalizarDescripcionEvento($request);
         $evento = Evento::create($data);
 
-        // Asociar precios por defecto para todos los sectores activos (disponibles=true)
+        // Asociar precios normalizados para todos los sectores activos (disponibles=true)
         $sectores = Sector::activos()->get();
         foreach ($sectores as $sector) {
             Precio::create([
                 'evento_id' => $evento->id,
                 'sector_id' => $sector->id,
-                'precio' => 0,
+                'precio' => $this->calcularPrecioNormalizado($evento, $sector),
                 'disponible' => true,
             ]);
         }
@@ -162,5 +171,28 @@ class EventoController extends Controller
         }
 
         return $data;
+    }
+
+    private function calcularPrecioNormalizado(Evento $evento, Sector $sector): float
+    {
+        $precioBase = match (true) {
+            str_starts_with($sector->nombre, 'Palco') => 150.00,
+            $sector->nombre === 'FRONT STAGE' => 120.00,
+            $sector->nombre === 'CLUB' => 100.00,
+            $sector->nombre === 'JOHNNIE WALKER' => 90.00,
+            $sector->nombre === 'PISTA' => 80.00,
+            str_starts_with($sector->nombre, 'Sector 10') => 50.00,
+            str_starts_with($sector->nombre, 'Sector 30') => 40.00,
+            default => 50.00,
+        };
+
+        $multiplicador = match ($evento->nombre) {
+            'Final Copa del Rey' => 1.5,
+            'Concierto Rock 2026' => 1.3,
+            'Festival Electrónica' => 1.2,
+            default => 1.0,
+        };
+
+        return round($precioBase * $multiplicador, 2);
     }
 }

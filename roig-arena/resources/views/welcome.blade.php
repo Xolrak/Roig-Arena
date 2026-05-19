@@ -8,6 +8,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
+    <div id="reservation-timer" class="reservation-timer" style="display:none;">
+        <span class="reservation-timer-label">Reservas seleccionadas</span>
+        <span id="reservation-timer-text" class="reservation-timer-text">Se liberarán en 02:00</span>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="container">
@@ -56,6 +61,8 @@
                         <h3 class="display-text" style="font-size: var(--text-2xl);">Selecciona tus Asientos</h3>
                         <p style="color: var(--color-arena-400);">Haz click en los asientos disponibles para añadirlos a tu compra</p>
                     </div>
+
+                    <div id="sector-selector" class="sector-selector" style="display:none;"></div>
                     
                     <!-- Mapa de asientos simplificado -->
                     <div id="seat-map">

@@ -21,6 +21,7 @@ class ReservaTest extends TestCase
         $evento = Evento::factory()->create();
         $sector = Sector::factory()->create();
         $asiento = Asiento::factory()->create(['sector_id' => $sector->id]);
+        $ahora = now();
         
         Precio::factory()->create([
             'evento_id' => $evento->id,
@@ -34,6 +35,14 @@ class ReservaTest extends TestCase
         ]);
 
         $response->assertStatus(201);
+        $response->assertJsonStructure([
+            'data' => ['expira_en_iso', 'tiempo_restante_minutos'],
+        ]);
+
+        $expiraEn = \Carbon\Carbon::parse($response->json('data.expira_en_iso'));
+        $this->assertGreaterThanOrEqual(110, $ahora->diffInSeconds($expiraEn));
+        $this->assertLessThanOrEqual(130, $ahora->diffInSeconds($expiraEn));
+
         $this->assertDatabaseHas('estado_asientos', [
             'evento_id' => $evento->id,
             'asiento_id' => $asiento->id,

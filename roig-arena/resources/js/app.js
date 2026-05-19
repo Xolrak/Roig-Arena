@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketsSection = document.getElementById('tickets-section');
     const ticketsGrid = document.getElementById('tickets-grid');
     const ticketsLoading = document.getElementById('tickets-loading');
+    const reservationTimer = document.getElementById('reservation-timer');
+    const reservationTimerText = document.getElementById('reservation-timer-text');
 
     const adminPanel = document.getElementById('admin-panel');
     const adminEventsList = document.getElementById('admin-events-list');
@@ -37,7 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentUser = null;
     let selectedEventId = null;
+    let selectedSectorId = null;
+    let currentEventSectors = [];
+    let currentSectorMeta = null;
     let currentReservations = [];
+    let currentSectorSeatsData = [];
+    let reservationTimerInterval = null;
+    let reservationRefreshPending = false;
 
     // Helper: Headers
     function getHeaders() {
@@ -46,6 +54,62 @@ document.addEventListener('DOMContentLoaded', () => {
         if (token) headers['Authorization'] = `Bearer ${token}`;
         return headers;
     }
+
+    function formatCountdown(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const minutes = String(Math.floor(safeSeconds / 60)).padStart(2, '0');
+        const seconds = String(safeSeconds % 60).padStart(2, '0');
+        return `${minutes}:${seconds}`;
+    }
+
+    function getReservationDeadline() {
+        const deadlines = currentReservations
+            .map(reserva => reserva.expira_en_iso ? new Date(reserva.expira_en_iso) : null)
+            .filter(date => date instanceof Date && !Number.isNaN(date.getTime()));
+
+        if (deadlines.length === 0) {
+            return null;
+        }
+
+        return new Date(Math.min(...deadlines.map(date => date.getTime())));
+    }
+
+    function updateReservationTimer() {
+        if (!reservationTimer || !reservationTimerText) return;
+
+        if (!currentReservations.length) {
+            reservationTimer.style.display = 'none';
+            reservationTimer.classList.remove('is-warning', 'is-expiring');
+            reservationRefreshPending = false;
+            return;
+        }
+
+        const deadline = getReservationDeadline();
+        if (!deadline) {
+            reservationTimer.style.display = 'none';
+            reservationTimer.classList.remove('is-warning', 'is-expiring');
+            return;
+        }
+
+        const remainingSeconds = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 1000));
+        const label = currentReservations.length === 1 ? '1 asiento reservado' : `${currentReservations.length} asientos reservados`;
+
+        if (remainingSeconds === 0) {
+            if (!reservationRefreshPending) {
+                reservationRefreshPending = true;
+                refreshCurrentEventState();
+            }
+        } else {
+            reservationRefreshPending = false;
+        }
+
+        reservationTimer.style.display = 'flex';
+        reservationTimerText.textContent = `${label} · Se liberarán en ${formatCountdown(remainingSeconds)}`;
+        reservationTimer.classList.toggle('is-warning', remainingSeconds <= 60 && remainingSeconds > 15);
+        reservationTimer.classList.toggle('is-expiring', remainingSeconds <= 15);
+    }
+
+    reservationTimerInterval = setInterval(updateReservationTimer, 1000);
 
     // Scroll Navbar
     window.addEventListener('scroll', () => {
@@ -64,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateNavState(true);
                 if (currentUser.is_admin) {
                     showView('admin');
+                } else {
+                    updateReservationTimer();
                 }
             } else {
                 localStorage.removeItem('auth_token');
@@ -89,6 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (navAdmin) {
                 navAdmin.style.display = 'none';
             }
+            currentReservations = [];
+            selectedEventId = null;
+            updateReservationTimer();
             showView('eventos');
         }
     }
@@ -101,6 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) {}
             localStorage.removeItem('auth_token');
             currentUser = null;
+            currentReservations = [];
+            selectedEventId = null;
             updateNavState(false);
         });
     }
@@ -218,10 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         events.forEach(evento => {
-            let minPrice = '0.00';
-            if (evento.precios && evento.precios.length > 0) {
-                minPrice = Math.min(...evento.precios.map(p => parseFloat(p.precio))).toFixed(2);
-            }
+            const minPrice = Number.parseFloat(evento.precio_minimo ?? evento.precio_minimo_formateado ?? 0) || 0;
+            const minPriceLabel = minPrice.toFixed(2);
             const card = document.createElement('article');
             card.className = 'event-card';
             card.innerHTML = `
@@ -237,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="event-card-title">${evento.nombre}</h3>
                     <p class="event-card-subtitle">${evento.descripcion_corta || 'Ven a disfrutar del mejor espectáculo.'}</p>
                     <div class="event-card-footer">
-                        <div class="event-card-price">${minPrice}€ <span>desde</span></div>
+                        <div class="event-card-price">${minPriceLabel}€ <span>desde</span></div>
                         <button class="btn btn-primary btn-sm btn-comprar" data-id="${evento.id}">Entradas ▶</button>
                     </div>
                 </div>
@@ -256,27 +325,113 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Require login first
         }
         selectedEventId = eventId;
+        selectedSectorId = null;
+        currentEventSectors = [];
+        currentSectorMeta = null;
         showView('detail');
         seatMap.innerHTML = '<p style="color:var(--color-arena-300); text-align:center;">Cargando mapa de asientos...</p>';
+        renderSectorSelector([]);
         btnCheckout.disabled = true;
         currentReservations = [];
+        currentSectorSeatsData = [];
         updateCheckoutBtn();
+        updateReservationTimer();
 
         try {
-            const [evRes, seatsRes] = await Promise.all([
-                fetch(`/api/eventos/${eventId}`, { headers: getHeaders() }),
-                fetch(`/api/eventos/${eventId}/asientos`, { headers: getHeaders() })
-            ]);
+            const evRes = await fetch(`/api/eventos/${eventId}`, { headers: getHeaders() });
             const evData = await evRes.json();
-            const seatsData = await seatsRes.json();
             
             detailTitle.textContent = evData.data.nombre;
+            currentEventSectors = buildEventSectors(evData.data);
+            renderSectorSelector(currentEventSectors);
             
             await syncReservations();
-            renderSeatMap(seatsData.data);
+            if (currentEventSectors.length) {
+                seatMap.innerHTML = '<p style="color:var(--color-arena-300); text-align:center;">Selecciona un sector para ver sus asientos.</p>';
+            } else {
+                seatMap.innerHTML = '<p style="color:var(--color-arena-300); text-align:center;">No hay sectores disponibles para este evento.</p>';
+            }
             
         } catch (e) {
             seatMap.innerHTML = '<p style="color:var(--color-error); text-align:center;">Error cargando asientos.</p>';
+        }
+    }
+
+    function buildEventSectors(eventData) {
+        const prices = Array.isArray(eventData.precios) ? eventData.precios : [];
+        return prices
+            .filter(price => price.disponible && price.sector && price.sector.activo)
+            .map(price => ({
+                id: price.sector.id,
+                nombre: price.sector.nombre,
+                descripcion: price.sector.descripcion,
+                precio: Number.parseFloat(price.precio_raw ?? price.precio ?? 0) || 0,
+            }))
+            .sort((left, right) => left.nombre.localeCompare(right.nombre, 'es'));
+    }
+
+    function renderSectorSelector(sectors) {
+        const sectorSelector = document.getElementById('sector-selector');
+        if (!sectorSelector) return;
+
+        if (!sectors.length) {
+            sectorSelector.style.display = 'none';
+            sectorSelector.innerHTML = '';
+            return;
+        }
+
+        sectorSelector.style.display = 'flex';
+        sectorSelector.innerHTML = sectors.map((sector) => `
+            <button
+                type="button"
+                class="sector-chip ${selectedSectorId && String(selectedSectorId) === String(sector.id) ? 'is-active' : ''}"
+                data-sector-id="${sector.id}"
+                data-sector-name="${sector.nombre}"
+                data-sector-price="${sector.precio}"
+            >
+                <span class="sector-chip-name">${sector.nombre}</span>
+                <span class="sector-chip-price">${sector.precio.toFixed(2)}€</span>
+            </button>
+        `).join('');
+
+        sectorSelector.querySelectorAll('.sector-chip').forEach(button => {
+            button.addEventListener('click', async () => {
+                const sectorId = button.getAttribute('data-sector-id');
+                const sectorName = button.getAttribute('data-sector-name');
+                const sectorPrice = Number.parseFloat(button.getAttribute('data-sector-price')) || null;
+                await selectSector(sectorId, sectorName, sectorPrice);
+            });
+        });
+    }
+
+    async function selectSector(sectorId, sectorName, sectorPrice = null) {
+        if (!selectedEventId) return;
+
+        selectedSectorId = String(sectorId);
+        currentSectorMeta = { id: String(sectorId), name: sectorName, price: sectorPrice };
+        const sectorSelector = document.getElementById('sector-selector');
+        if (sectorSelector) {
+            sectorSelector.querySelectorAll('.sector-chip').forEach(button => {
+                button.classList.toggle('is-active', button.getAttribute('data-sector-id') === String(sectorId));
+            });
+        }
+
+        seatMap.innerHTML = '<p style="color:var(--color-arena-300); text-align:center;">Cargando asientos del sector...</p>';
+        btnCheckout.disabled = currentReservations.length === 0;
+
+        try {
+            const res = await fetch(`/api/eventos/${selectedEventId}/sectores/${sectorId}/asientos`, { headers: getHeaders() });
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'No se pudieron cargar los asientos del sector');
+            }
+
+            currentSectorSeatsData = data.data.asientos || [];
+            currentSectorMeta = { id: String(sectorId), name: sectorName, price: data.data.precio };
+            renderSeatMap(currentSectorSeatsData, currentSectorMeta.name, currentSectorMeta.price);
+        } catch (error) {
+            seatMap.innerHTML = '<p style="color:var(--color-error); text-align:center;">Error cargando los asientos del sector.</p>';
         }
     }
 
@@ -285,11 +440,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/reservas', { headers: getHeaders() });
             const data = await res.json();
             currentReservations = data.data.filter(r => r.evento_id == selectedEventId);
+            updateReservationTimer();
         } catch (e) {}
     }
 
-    function renderSeatMap(seats) {
+    async function refreshCurrentEventState() {
+        if (!selectedEventId) {
+            reservationRefreshPending = false;
+            return;
+        }
+
+        try {
+            await syncReservations();
+            if (selectedSectorId && currentSectorSeatsData.length) {
+                renderSeatMap(currentSectorSeatsData, currentSectorMeta?.name || null, currentSectorMeta?.price ?? null);
+            }
+        } finally {
+            reservationRefreshPending = false;
+        }
+    }
+
+    function renderSeatMap(seats, sectorName = null, sectorPrice = null) {
         seatMap.innerHTML = '';
+        if (sectorName) {
+            const header = document.createElement('div');
+            header.className = 'seat-map-header';
+            header.innerHTML = `
+                <div>
+                    <div class="seat-map-kicker">Sector seleccionado</div>
+                    <div class="seat-map-title">${sectorName}</div>
+                </div>
+                <div class="seat-map-price">${sectorPrice !== null && sectorPrice !== undefined ? `${Number.parseFloat(sectorPrice).toFixed(2)}€` : ''}</div>
+            `;
+            seatMap.appendChild(header);
+        }
+
         // Group by fila just to render rows
         const grouped = seats.reduce((acc, curr) => {
             (acc[curr.fila] = acc[curr.fila] || []).push(curr);
@@ -331,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentReservations = currentReservations.filter(r => r.id != existingRes.id);
                     element.classList.remove('selected');
                     element.classList.add('available');
+                    updateReservationTimer();
                 }
             } else {
                 // Reserve
@@ -342,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentReservations.push(data.data);
                     element.classList.remove('available');
                     element.classList.add('selected');
+                    updateReservationTimer();
                 } else {
                     alert(data.error || 'Error al reservar. El asiento podría estar ocupado.');
                 }
@@ -371,6 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST', headers: getHeaders(), body: JSON.stringify({ reservas: reservasIds })
             });
             if (res.ok) {
+                currentReservations = [];
+                updateReservationTimer();
                 showView('entradas');
             } else {
                 const data = await res.json();
@@ -439,8 +628,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-family: var(--font-mono); font-size: 10px; color: var(--color-arena-400); text-align: center; letter-spacing: 0.1em;">
                         ${entrada.codigo_qr}
                     </div>
+                    <button class="btn btn-secondary btn-sm btn-cancel-entry" data-id="${entrada.id}" data-evento-id="${entrada.evento?.id || ''}" style="width: 100%; margin-top: 12px;">
+                        Cancelar entrada
+                    </button>
                 `;
                 ticketsGrid.appendChild(card);
+            });
+
+            ticketsGrid.querySelectorAll('.btn-cancel-entry').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const entradaId = e.currentTarget.getAttribute('data-id');
+                    const eventoId = e.currentTarget.getAttribute('data-evento-id');
+
+                    if (!confirm('¿Quieres cancelar esta entrada y liberar el asiento?')) {
+                        return;
+                    }
+
+                    e.currentTarget.disabled = true;
+                    e.currentTarget.textContent = 'Cancelando...';
+
+                    try {
+                        const res = await fetch(`/api/entradas/${entradaId}`, {
+                            method: 'DELETE',
+                            headers: getHeaders(),
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            await loadTickets();
+                            if (selectedEventId && eventoId && String(selectedEventId) === String(eventoId) && currentSectorSeatsData.length) {
+                                await refreshCurrentEventState();
+                            }
+                        } else {
+                            alert(data.error || 'No se pudo cancelar la entrada.');
+                            e.currentTarget.disabled = false;
+                            e.currentTarget.textContent = 'Cancelar entrada';
+                        }
+                    } catch (error) {
+                        alert('Error de conexión');
+                        e.currentTarget.disabled = false;
+                        e.currentTarget.textContent = 'Cancelar entrada';
+                    }
+                });
             });
         } catch (e) {
             ticketsLoading.textContent = 'Error cargando las entradas';
@@ -586,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setAdminFeedback(data.message || 'Evento guardado.', 'success');
                     resetAdminEventForm();
                     loadAdminData();
+                    fetchEvents();
                 } else {
                     setAdminFeedback(data.error || data.message || 'Error guardando el evento.', 'error');
                 }
@@ -671,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await res.json();
                     if (res.ok) {
                         setAdminFeedback(data.message || 'Evento eliminado.', 'success');
+                        fetchEvents();
                         loadAdminData();
                     } else {
                         setAdminFeedback(data.error || 'No se pudo eliminar.', 'error');
@@ -756,6 +987,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (view === 'detail') {
             detailContainer.style.display = 'block';
             if (adminPanel) adminPanel.style.display = 'none';
+            const sectorSelector = document.getElementById('sector-selector');
+            if (sectorSelector) sectorSelector.style.display = selectedEventId ? 'flex' : 'none';
             detailContainer.scrollIntoView({behavior: 'smooth'});
         } else if (view === 'entradas') {
             ticketsSection.style.display = 'block';

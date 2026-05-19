@@ -65,6 +65,13 @@ class Asiento extends Model
     {
         return !$this->estadoAsientos()
             ->where('evento_id', $eventoId)
+            ->where(function ($query) {
+                $query->where('estado', 'vendido')
+                    ->orWhere(function ($query) {
+                        $query->where('estado', 'bloqueado')
+                            ->where('reservado_hasta', '>', now());
+                    });
+            })
             ->exists();
     }
 
@@ -106,6 +113,7 @@ class Asiento extends Model
     {
         return $this->estadoAsientos()
             ->where('evento_id', $eventoId)
+            ->orderByDesc('id')
             ->first();
     }
 

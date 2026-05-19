@@ -67,7 +67,7 @@ class EstadoAsiento extends Model
             return false; // Las ventas no expiran
         }
 
-        return $this->reservado_hasta && $this->reservado_hasta->isPast();
+        return $this->reservado_hasta && $this->reservado_hasta->lessThanOrEqualTo(now());
     }
 
     /**
@@ -139,7 +139,7 @@ class EstadoAsiento extends Model
     public function scopeExpirados($query)
     {
         return $query->where('estado', 'bloqueado')
-                     ->where('reservado_hasta', '<', now());
+                     ->where('reservado_hasta', '<=', now());
     }
 
     /**

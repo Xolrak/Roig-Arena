@@ -25,7 +25,16 @@ class AsientoController extends Controller
             ->pluck('precio', 'sector_id');
             
         $asientosOcupados = array_fill_keys(
-            \App\Models\EstadoAsiento::where('evento_id', $eventoId)->pluck('asiento_id')->toArray(), 
+            \App\Models\EstadoAsiento::where('evento_id', $eventoId)
+                ->where(function ($query) {
+                    $query->where('estado', 'vendido')
+                        ->orWhere(function ($query) {
+                            $query->where('estado', 'bloqueado')
+                                ->where('reservado_hasta', '>', now());
+                        });
+                })
+                ->pluck('asiento_id')
+                ->toArray(),
             true
         );
         
@@ -65,7 +74,16 @@ class AsientoController extends Controller
         }
 
         $asientosOcupados = array_fill_keys(
-            \App\Models\EstadoAsiento::where('evento_id', $eventoId)->pluck('asiento_id')->toArray(), 
+            \App\Models\EstadoAsiento::where('evento_id', $eventoId)
+                ->where(function ($query) {
+                    $query->where('estado', 'vendido')
+                        ->orWhere(function ($query) {
+                            $query->where('estado', 'bloqueado')
+                                ->where('reservado_hasta', '>', now());
+                        });
+                })
+                ->pluck('asiento_id')
+                ->toArray(),
             true
         );
 
