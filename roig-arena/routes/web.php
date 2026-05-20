@@ -6,7 +6,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Aplicación SPA: servir la vista principal también en /admin para evitar 404
+// Panel de administración independiente
+Route::get('/panel-admin', function () {
+    return view('panel-admin');
+});
+
+// Compatibilidad con redirecciones antiguas
 Route::get('/admin', function () {
-    return view('welcome');
+    return redirect('/panel-admin');
 });

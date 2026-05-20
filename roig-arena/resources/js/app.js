@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const pageMode = document.body.dataset.page || 'home';
+    const isAdminPage = pageMode === 'admin';
     
     // UI Elements
     const navbar = document.getElementById('navbar');
@@ -127,8 +129,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = data.data || data;
                 updateNavState(true);
                 if (currentUser.is_admin) {
-                    showView('admin');
+                    if (!isAdminPage) {
+                        window.location.href = '/panel-admin';
+                        return;
+                    }
+                    loadAdminData();
                 } else {
+                    if (isAdminPage) {
+                        window.location.href = '/';
+                        return;
+                    }
                     updateReservationTimer();
                 }
             } else {
@@ -142,23 +152,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNavState(isLogged) {
         if (isLogged) {
-            btnLoginNav.style.display = 'none';
-            btnLogoutNav.style.display = 'inline-flex';
-            navMisEntradas.style.display = 'block';
+            if (btnLoginNav) btnLoginNav.style.display = 'none';
+            if (btnLogoutNav) btnLogoutNav.style.display = 'inline-flex';
+            if (navMisEntradas) navMisEntradas.style.display = 'block';
             if (navAdmin) {
                 navAdmin.style.display = currentUser && currentUser.is_admin ? 'block' : 'none';
             }
         } else {
-            btnLoginNav.style.display = 'inline-flex';
-            btnLogoutNav.style.display = 'none';
-            navMisEntradas.style.display = 'none';
+            if (btnLoginNav) btnLoginNav.style.display = 'inline-flex';
+            if (btnLogoutNav) btnLogoutNav.style.display = 'none';
+            if (navMisEntradas) navMisEntradas.style.display = 'none';
             if (navAdmin) {
                 navAdmin.style.display = 'none';
             }
             currentReservations = [];
             selectedEventId = null;
             updateReservationTimer();
-            showView('eventos');
+            if (!isAdminPage) {
+                showView('eventos');
+            } else {
+                window.location.href = '/';
+            }
         }
     }
 
@@ -179,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navAdmin) {
         navAdmin.addEventListener('click', (e) => {
             e.preventDefault();
-            showView('admin');
+            window.location.href = '/panel-admin';
         });
     }
 
@@ -544,44 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCheckout.disabled = currentReservations.length === 0;
         btnCheckout.textContent = `Proceder al Pago (${currentReservations.length} asientos)`;
     }
-
-    btnBack.addEventListener('click', () => showView('eventos'));
-
-    // 4. CHECKOUT
-    btnCheckout.addEventListener('click', async () => {
-        btnCheckout.disabled = true;
-        btnCheckout.textContent = 'Procesando...';
-        
-        const reservasIds = currentReservations.map(r => r.id);
-        try {
-            const res = await fetch('/api/compras', {
-                method: 'POST', headers: getHeaders(), body: JSON.stringify({ reservas: reservasIds })
-            });
-            if (res.ok) {
-                currentReservations = [];
-                updateReservationTimer();
-                showView('entradas');
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Error al procesar el pago');
-                btnCheckout.disabled = false;
-                updateCheckoutBtn();
-            }
-        } catch (e) {
-            alert('Error de conexión');
-            btnCheckout.disabled = false;
-            updateCheckoutBtn();
-        }
-    });
-
-    // 5. MIS ENTRADAS
-    navMisEntradas.addEventListener('click', (e) => {
-        e.preventDefault();
-        showView('entradas');
-    });
-    navEventos.addEventListener('click', (e) => {
-        showView('eventos'); // Smooth scroll is handled natively or we just switch view
-    });
 
     async function loadTickets() {
         ticketsLoading.style.display = 'block';
@@ -984,6 +960,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // View Routing
     function showView(view) {
+        if (isAdminPage) {
+            if (view === 'admin' && adminPanel) {
+                adminPanel.style.display = 'block';
+                adminPanel.classList.add('is-active');
+            }
+            return;
+        }
+
         const h2Eventos = document.querySelector('#eventos > .container > h2');
         eventsGrid.style.display = 'none';
         detailContainer.style.display = 'none';
@@ -1016,7 +1000,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    if (!isAdminPage) {
+        if (navEventos) {
+            navEventos.addEventListener('click', (e) => {
+                e.preventDefault();
+                showView('eventos');
+            });
+        }
+
+        if (navMisEntradas) {
+            navMisEntradas.addEventListener('click', (e) => {
+                e.preventDefault();
+                showView('entradas');
+            });
+        }
+
+        if (btnBack) {
+            btnBack.addEventListener('click', () => showView('eventos'));
+        }
+
+        if (btnCheckout) {
+            btnCheckout.addEventListener('click', async () => {
+                btnCheckout.disabled = true;
+                btnCheckout.textContent = 'Procesando...';
+                
+                const reservasIds = currentReservations.map(r => r.id);
+                try {
+                    const res = await fetch('/api/compras', {
+                        method: 'POST', headers: getHeaders(), body: JSON.stringify({ reservas: reservasIds })
+                    });
+                    if (res.ok) {
+                        currentReservations = [];
+                        updateReservationTimer();
+                        showView('entradas');
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || 'Error al procesar el pago');
+                        btnCheckout.disabled = false;
+                        updateCheckoutBtn();
+                    }
+                } catch (e) {
+                    alert('Error de conexión');
+                    btnCheckout.disabled = false;
+                    updateCheckoutBtn();
+                }
+            });
+        }
+    }
+
     // Init
     checkAuth();
-    fetchEvents();
+    if (!isAdminPage) {
+        fetchEvents();
+    } else {
+        loadAdminData();
+    }
 });

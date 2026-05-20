@@ -48,7 +48,7 @@ copy_files() {
 # Función principal
 main() {
     log_info "Iniciando setup part02 de Roig-Arena..."
-
+    mv ./roig-arena ./scripts/
     # Crear proyecto
     log_info "Creando proyecto Laravel con laravel.build..."
     curl -s "https://laravel.build/roig-arena?with=mysql,redis,meilisearch,mailpit,selenium" | bash
