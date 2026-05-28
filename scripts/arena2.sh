@@ -12,7 +12,6 @@ echo -e "${BLUE}>>> Iniciando proceso de reinicio del entorno Arena2 (DB remota 
 echo -e "${YELLOW}[1/5] Levantando base de datos en AWS...${NC}"
 
 # (!!) IMPORTANTE: CAMBIA LA RUTA Y LA IP (!!) ###########################################################
-#
 ssh -i ./.ssh/arena-db-key.pem ubuntu@98.89.101.197 "docker compose -f compose-database-server.yaml up -d"
 #
 ##########################################################################################################
